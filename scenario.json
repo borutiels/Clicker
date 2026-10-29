@@ -1,0 +1,16 @@
+[
+  {
+    "selector": "div.slot.free",
+    "mode": "all",
+    "text": "21:00",
+    "limit": 0,
+    "windowMonths": 1
+  },
+  {
+    "selector": "#save",
+    "mode": "one",
+    "text": "Сохранить",
+    "limit": 0,
+    "windowMonths": 1
+  }
+]

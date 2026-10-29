@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>Тестовая запись</title>
+    <style>
+        body { font-family: sans-serif; margin: 16px; }
+        .day { margin: 10px 0; }
+        .day h4 { margin: 0 0 4px; }
+        .slots { display: flex; flex-wrap: wrap; }
+        .slot { padding: 6px 10px; margin: 2px; border: 1px solid #888; border-radius: 6px; font-size: 13px; }
+        .free { background: #c8f7c5; cursor: pointer; }
+        .busy { background: #eee; color: #999; }
+        .booked { background: #f7c5c5; color: #800; }
+        .selected { outline: 3px solid #2a7; }
+        #status { position: sticky; top: 0; background: #fff; padding: 8px 0; border-bottom: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+
+<div id="status">
+    <button id="save">Сохранить</button>
+    <span id="result"></span>
+    <br>
+    <small id="info"></small>
+</div>
+
+<div id="days"></div>
+
+<script>
+    // ---------- настройки теста ----------
+    const DAYS = 7;               // сколько дней показывать (поставь 60, чтобы проверить окно в месяц)
+    const TICK_MS = 3000;         // как часто обновляются слоты
+    const P_BUSY_TO_FREE = 0.01;  // шанс, что занятый слот освободится за один тик
+    const P_FREE_TO_BUSY = 0.5;   // шанс, что свободный слот снова займут за один тик
+    // ---------------------------------
+
+    const pad = n => String(n).padStart(2, "0");
+    const container = document.getElementById("days");
+
+    function setFree(s) {
+      s.className = "slot free";
+      s.onclick = () => {
+        document.querySelectorAll(".selected").forEach(e => e.classList.remove("selected"));
+        s.classList.add("selected");
+      };
+    }
+
+    function setBusy(s) {
+      s.className = "slot busy";
+      s.onclick = null;
+    }
+
+    // строим дни и слоты
+    for (let d = 0; d < DAYS; d++) {
+      const dt = new Date();
+      dt.setDate(dt.getDate() + d);
+      const iso = dt.getFullYear() + "-" + pad(dt.getMonth() + 1) + "-" + pad(dt.getDate());
+
+      const day = document.createElement("div");
+      day.className = "day";
+      day.dataset.date = iso;
+      day.innerHTML = "<h4>" + iso + "</h4>";
+
+      const row = document.createElement("div");
+      row.className = "slots";
+      for (let h = 0; h < 24; h++) {
+        const s = document.createElement("div");
+        s.textContent = pad(h) + ":00";
+        setBusy(s);
+        row.appendChild(s);
+      }
+      day.appendChild(row);
+      container.appendChild(day);
+    }
+
+    // кнопка "Сохранить": бронирует выбранный слот
+    document.getElementById("save").onclick = () => {
+      const s = document.querySelector(".selected");
+      const res = document.getElementById("result");
+      if (!s) { res.textContent = " Слот не выбран"; return; }
+      const date = s.closest(".day").dataset.date;
+      res.textContent = " Сохранено: " + date + " " + s.textContent
+                      + " (в " + new Date().toLocaleTimeString() + ")";
+      s.className = "slot booked";     // слот теперь забронирован навсегда
+      s.onclick = null;
+    };
+
+    // каждые 3 секунды слоты случайно освобождаются и занимаются, без перезагрузки
+    setInterval(() => {
+      document.querySelectorAll(".slot").forEach(s => {
+        if (s.classList.contains("booked") || s.classList.contains("selected")) return;
+        if (s.classList.contains("free")) {
+          if (Math.random() < P_FREE_TO_BUSY) setBusy(s);
+        } else {
+          if (Math.random() < P_BUSY_TO_FREE) setFree(s);
+        }
+      });
+      const free = document.querySelectorAll(".slot.free").length;
+      const booked = document.querySelectorAll(".slot.booked").length;
+      document.getElementById("info").textContent =
+        "Обновлено " + new Date().toLocaleTimeString() + " | свободных сейчас: " + free + " | забронировано: " + booked;
+    }, TICK_MS);
+</script>
+</body>
+</html>
